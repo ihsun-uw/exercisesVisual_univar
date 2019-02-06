@@ -1,0 +1,234 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Course: Visual Analytics for Policy and Management
+###Univariate Exercise 1
+###Isabella Sun
+
+Data to be used:
+```{r}
+link='https://github.com/EvansDataScience/VisualAnalytics_2_tabularData/raw/master/data/eduwa.rda'
+#getting the data TABLE from the file in the cloud:
+load(file=url(link))
+```
+
+
+```{r}
+absoluteT=table(eduwa$LocaleType,exclude = 'nothing')
+ToPlot=prop.table(absoluteT)
+names(ToPlot)[5]='Unknown'
+```
+
+
+```{r}
+# details:
+ToPlot=ToPlot*100 # preparing labels
+paletteHere=rainbow(length(ToPlot)) # customizing set of colors
+paste0(round(ToPlot,2),'%')
+```
+
+
+```{r}
+plotLabels=paste0(round(ToPlot,2),'%') # labels for the slices
+
+```
+
+
+```{r}
+paletteHereNew=c('gray') # just one color
+
+```
+
+
+```{r}
+titleText2='Are all locations getting a fair share of public schools in WA?'
+sourceText='Source: US Department of Education'
+```
+
+###Create ordered bar plot using ggplot 
+### METHOD 1
+####HERE I MAKE A CHANGE TO ORDER THE BAR PLOT 
+ --------------------------------------------
+```{r}
+
+OrderedToPlot=sort(ToPlot) 
+```
+###--------------------------------------------
+ 
+```{r}
+tableFreq=as.data.frame(OrderedToPlot)
+names(tableFreq)=c("locale","pct")
+
+```
+
+```{r}
+tableFreq
+```
+
+
+```{r, eval=TRUE}
+library(ggplot2)
+```
+
+```{r}
+base= ggplot(data = tableFreq, 
+             aes(x = reorder(locale,pct), # reordering in the ggplot command
+                 y = pct)) 
+
+plot1 = base + geom_bar(fill ="gray",
+                        stat = 'identity') 
+plot2 = plot1 + labs(title=titleText2,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText)
+plot3 = plot2 + geom_hline(yintercept = 25, 
+                           linetype="dashed", 
+                           size=1.5,
+                           alpha=0.5) 
+
+plot4 = plot3 + scale_y_continuous(breaks=c(0,10, 25,40,50),
+                                 limits = c(0, 50),
+                                 labels=scales::unit_format(suffix = '%')) 
+
+plot5 = plot4 + theme(panel.background = element_rect(fill = "white",
+                                                    colour = "grey50"),
+                    plot.caption = element_text(hjust = 0), 
+                    plot.title = element_text(hjust = 0.5))
+
+plot6 = plot5 + geom_text(aes(y = pct ,
+                            label = paste0(round(pct,2), '%')),
+                        hjust=1,
+                        size = 3)
+
+plot7=plot6 + coord_flip()
+
+plot7
+```
+
+
+```{r}
+
+ToPlotOrd=sort(ToPlot)
+```
+
+####ADDED THIS LINE BECAUSE THE LABELS WERE NOT SHOWING UP IN THE RIGHT ORDER
+```{r}
+plotLabels=paste0(round(ToPlotOrd,2),'%') # labels for the slices
+
+```
+
+```{r}
+
+par(mgp=c(1,0.5,0)) # distance label, tickText,tick
+location=barplot(ToPlotOrd,
+         col = paletteHereNew,
+         border=NA,
+         main=titleText2,
+         xlim=c(0,50), 
+         xlab = '(in %)',
+         horiz = T,
+         cex.names = 0.7,
+         cex.lab=0.6,
+         xaxt="n") # no x-axis, so I customize it below...
+
+text(x=ToPlotOrd,y=location,labels=plotLabels,pos = 2,cex = 0.7) 
+title(sub=sourceText, adj=0,cex.sub=0.7,line = 3) 
+
+# reference line
+abline(v=25,lty=3,lwd=3)
+
+# customizong tick values
+xtick<-c(0,10,25,40,50)
+axis(side=1, at=xtick, labels = xtick,cex.axis=0.8)
+```
+
+###METHOD 2 
+####Ordered bar plot using ggplot - using a different method 
+
+```{r, eval=TRUE}
+tableFreq2=as.data.frame(ToPlot)
+names(tableFreq2)=c("locale","pct")
+```
+
+```{r}
+base= ggplot(data = tableFreq, 
+             aes(x = reorder(locale,pct), # reordering in the ggplot command
+                 y = pct)) 
+
+plot1 = base + geom_bar(fill ="gray",
+                        stat = 'identity') 
+plot2 = plot1 + labs(title=titleText2,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText)
+plot3 = plot2 + geom_hline(yintercept = 25, 
+                           linetype="dashed", 
+                           size=1.5,
+                           alpha=0.5) 
+
+plot4 = plot3 + scale_y_continuous(breaks=c(0,10, 25,40,50),
+                                 limits = c(0, 50),
+                                 labels=scales::unit_format(suffix = '%')) 
+
+plot5 = plot4 + theme(panel.background = element_rect(fill = "white",
+                                                    colour = "grey50"),
+                    plot.caption = element_text(hjust = 0), 
+                    plot.title = element_text(hjust = 0.5))
+
+plot6 = plot5 + geom_text(aes(y = pct ,
+                            label = paste0(round(pct,2), '%')),
+                        hjust=1,
+                        size = 3)
+
+plot7=plot6 + coord_flip()
+
+plot7
+
+
+```
+
+###METHOD 3
+
+```{r}
+tableFreq[order(tableFreq$pct),]
+tableFreq0=tableFreq[order(tableFreq$pct),]
+```
+
+```{r}
+base= ggplot(data = tableFreq0, 
+             aes(x = reorder(locale,pct), # reordering in the ggplot command
+                 y = pct)) 
+
+plot1 = base + geom_bar(fill ="gray",
+                        stat = 'identity') 
+plot2 = plot1 + labs(title=titleText2,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText)
+plot3 = plot2 + geom_hline(yintercept = 25, 
+                           linetype="dashed", 
+                           size=1.5,
+                           alpha=0.5) 
+
+plot4 = plot3 + scale_y_continuous(breaks=c(0,10, 25,40,50),
+                                 limits = c(0, 50),
+                                 labels=scales::unit_format(suffix = '%')) 
+
+plot5 = plot4 + theme(panel.background = element_rect(fill = "white",
+                                                    colour = "grey50"),
+                    plot.caption = element_text(hjust = 0), 
+                    plot.title = element_text(hjust = 0.5))
+
+plot6 = plot5 + geom_text(aes(y = pct ,
+                            label = paste0(round(pct,2), '%')),
+                        hjust=1,
+                        size = 3)
+
+plot7=plot6 + coord_flip()
+
+plot7
+```
+
