@@ -6,81 +6,72 @@ output:
 
 ## Course: Visual Analytics for Policy and Management
 ###Univariate Exercise 1
-###Isabella Sun
+####Isabella Sun
 
-Data to be used:
+
+
+####Figures:
+
+1. [Ordered Bar Plot using ggplot](#ex1)
+
+2. [Loliplot](#ex2)
+
+3. [Box Plot](#ex3)
+
+4. [Histogram](#ex4)
+
+5. [Histogram](#ex5_1) and [Density Plot using ggplot](#ex5_2)
+
+
+
+
+####Exercise 1 - Ordered Bar Plot
+Loading data to be used and libraries:
 ```{r}
 link='https://github.com/EvansDataScience/VisualAnalytics_2_tabularData/raw/master/data/eduwa.rda'
-#getting the data TABLE from the file in the cloud:
+
 load(file=url(link))
+
+library(ggplot2)
+
 ```
 
-
+Create a table with the proportions and multiply by 100 to get percentages
 ```{r}
 absoluteT=table(eduwa$LocaleType,exclude = 'nothing')
 ToPlot=prop.table(absoluteT)
 names(ToPlot)[5]='Unknown'
-```
-
-
-```{r}
-# details:
-ToPlot=ToPlot*100 # preparing labels
-paletteHere=rainbow(length(ToPlot)) # customizing set of colors
+ToPlot=ToPlot*100
 paste0(round(ToPlot,2),'%')
-```
-
-
-```{r}
-plotLabels=paste0(round(ToPlot,2),'%') # labels for the slices
 
 ```
 
-
-```{r}
-paletteHereNew=c('gray') # just one color
-
-```
-
-
-```{r}
-titleText2='Are all locations getting a fair share of public schools in WA?'
-sourceText='Source: US Department of Education'
-```
-
-###Create ordered bar plot using ggplot 
-### METHOD 1
-####HERE I MAKE A CHANGE TO ORDER THE BAR PLOT 
- --------------------------------------------
+Create an ordered dataframe for ggplot to plot. "Locale", our categorical variable is not ordered so we can rearange it. 
 ```{r}
 
-OrderedToPlot=sort(ToPlot) 
-```
-###--------------------------------------------
- 
-```{r}
-tableFreq=as.data.frame(OrderedToPlot)
-names(tableFreq)=c("locale","pct")
+OrderedToPlot=sort(ToPlot) #first ordering the table
+tableFreq=as.data.frame(OrderedToPlot) #save the ordered table as a data frame
+names(tableFreq)=c("locale","pct") # label vars
 
-```
-
-```{r}
 tableFreq
 ```
 
-
-```{r, eval=TRUE}
-library(ggplot2)
+Misc plot elements like title and source:
+```{r}
+titleText='Are all locations getting a fair share of public schools in WA?'
+sourceText='Source: US Department of Education'
 ```
 
+<a id='ex1'></a>
+Create Plot
 ```{r}
 base= ggplot(data = tableFreq, 
-             aes(x = reorder(locale,pct), # reordering in the ggplot command
+             aes(x = locale,
                  y = pct)) 
 
 plot1 = base + geom_bar(fill ="gray",
                         stat = 'identity') 
-plot2 = plot1 + labs(title=titleText2,
+plot2 = plot1 + labs(title=titleText,
                      x =NULL, 
                      y = NULL,
                      caption = sourceText)
@@ -108,127 +99,201 @@ plot7=plot6 + coord_flip()
 plot7
 ```
 
+####Exercise 2 - Ordered Loliplot
+We're using a different dataset for this figure, so let's bring in the new data and load necessary libraries
 
 ```{r}
+library(foreign)
+library(haven)
 
-ToPlotOrd=sort(ToPlot)
+link='https://github.com/quinhasf/pubpol-599/raw/master/ape_analysis.dta'
+chw_fp <- read_dta(url(link)) #download from link and save in datafram named chw_fp
+
 ```
 
-####ADDED THIS LINE BECAUSE THE LABELS WERE NOT SHOWING UP IN THE RIGHT ORDER
+Translate information into a dataframe for ggplot 
 ```{r}
-plotLabels=paste0(round(ToPlotOrd,2),'%') # labels for the slices
+#Create new dataframe with just the relevant variables
+LoliToPlot = chw_fp[,c('province','ape_contrib')]
+
+#Order data frame
+OrderedLoliToPlot=LoliToPlot[order(LoliToPlot$ape_contrib),]
+
+#Add a new variable and calculate distance from mean
+OrderedLoliToPlot$gap=OrderedLoliToPlot$ape_contrib-mean(OrderedLoliToPlot$ape_contrib)
+
+#Another variable indicating whether province is above or below the mean
+OrderedLoliToPlot$PositiveGap=ifelse(OrderedLoliToPlot$gap>0,"above average","below average")
 
 ```
 
+Misc table elements like title and source 
 ```{r}
-
-par(mgp=c(1,0.5,0)) # distance label, tickText,tick
-location=barplot(ToPlotOrd,
-         col = paletteHereNew,
-         border=NA,
-         main=titleText2,
-         xlim=c(0,50), 
-         xlab = '(in %)',
-         horiz = T,
-         cex.names = 0.7,
-         cex.lab=0.6,
-         xaxt="n") # no x-axis, so I customize it below...
-
-text(x=ToPlotOrd,y=location,labels=plotLabels,pos = 2,cex = 0.7) 
-title(sub=sourceText, adj=0,cex.sub=0.7,line = 3) 
-
-# reference line
-abline(v=25,lty=3,lwd=3)
-
-# customizong tick values
-xtick<-c(0,10,25,40,50)
-axis(side=1, at=xtick, labels = xtick,cex.axis=0.8)
+title_loli= "Where is the contribution of community health organizations below average?"
+source= "Source: Health Information System"
 ```
 
-###METHOD 2 
-####Ordered bar plot using ggplot - using a different method 
-
-```{r, eval=TRUE}
-tableFreq2=as.data.frame(ToPlot)
-names(tableFreq2)=c("locale","pct")
-```
-
+<a id='ex2'></a>
+Create Plot
 ```{r}
-base= ggplot(data = tableFreq, 
-             aes(x = reorder(locale,pct), # reordering in the ggplot command
-                 y = pct)) 
+base = ggplot(OrderedLoliToPlot, aes(province,gap,color=PositiveGap,
+                              label = round(gap,2))) 
+lolliplot1 = base + geom_segment(aes(y = 0, 
+                                   x = province, 
+                                   yend = gap, 
+                                   xend = province), color = "gray") 
+lolliplot2=lolliplot1 + geom_point() 
+lolliplot3= lolliplot2 + scale_x_discrete(limits=OrderedLoliToPlot$province) 
 
-plot1 = base + geom_bar(fill ="gray",
-                        stat = 'identity') 
-plot2 = plot1 + labs(title=titleText2,
+lolliplot5 = lolliplot3 + geom_text(nudge_x=0.45, show.legend = FALSE) 
+
+lolliplot6 = lolliplot5 + labs(title=title_loli,
                      x =NULL, 
                      y = NULL,
-                     caption = sourceText)
-plot3 = plot2 + geom_hline(yintercept = 25, 
-                           linetype="dashed", 
-                           size=1.5,
-                           alpha=0.5) 
+                     caption = source)
 
-plot4 = plot3 + scale_y_continuous(breaks=c(0,10, 25,40,50),
-                                 limits = c(0, 50),
-                                 labels=scales::unit_format(suffix = '%')) 
+lolliplot7 = lolliplot6 + theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust=1))
 
-plot5 = plot4 + theme(panel.background = element_rect(fill = "white",
-                                                    colour = "grey50"),
-                    plot.caption = element_text(hjust = 0), 
-                    plot.title = element_text(hjust = 0.5))
 
-plot6 = plot5 + geom_text(aes(y = pct ,
-                            label = paste0(round(pct,2), '%')),
-                        hjust=1,
-                        size = 3)
+lolliplot7
+```
 
-plot7=plot6 + coord_flip()
+####Exercise 3 - Box Plot
+Going back to using the Washington education data...create a data frame with highest grade offered in Washington schools
 
-plot7
-
+```{r}
+BoxToPlot=as.data.frame(prop.table(table(eduwa$High.Grade)))
+names(BoxToPlot)=c('grade','pct')
 
 ```
 
-###METHOD 3
-
+Misc elements like source, title, and labels:
 ```{r}
-tableFreq[order(tableFreq$pct),]
-tableFreq0=tableFreq[order(tableFreq$pct),]
+boxplot_title = "Distribution of Highest Grade Offered in Washington Schools"
+source.text = 'Source: US Department of Education'
+
+#labels
+ordLabels= levels(eduwa$High.Grade)
 ```
-
+<a id='ex3'></a>
+Create plot
 ```{r}
-base= ggplot(data = tableFreq0, 
-             aes(x = reorder(locale,pct), # reordering in the ggplot command
-                 y = pct)) 
+box1 = ggplot(eduwa, aes(y=as.numeric(High.Grade), x='')) 
+box1 = box1 + geom_boxplot() + coord_flip() 
 
-plot1 = base + geom_bar(fill ="gray",
-                        stat = 'identity') 
-plot2 = plot1 + labs(title=titleText2,
+box2 = box1 + scale_y_continuous(labels=ordLabels,breaks=1:15)
+
+box3=box2 + labs(title=boxplot_title,
                      x =NULL, 
-                     y = NULL,
-                     caption = sourceText)
-plot3 = plot2 + geom_hline(yintercept = 25, 
-                           linetype="dashed", 
-                           size=1.5,
-                           alpha=0.5) 
+                     y = 'Grade Level',
+                     caption = source.text)
 
-plot4 = plot3 + scale_y_continuous(breaks=c(0,10, 25,40,50),
-                                 limits = c(0, 50),
-                                 labels=scales::unit_format(suffix = '%')) 
-
-plot5 = plot4 + theme(panel.background = element_rect(fill = "white",
+box4 = box3 + theme(panel.background = element_rect(fill = "white",
                                                     colour = "grey50"),
-                    plot.caption = element_text(hjust = 0), 
-                    plot.title = element_text(hjust = 0.5))
+                    plot.title = element_text(hjust = 0.5),
+                    plot.caption = element_text(hjust=0))
+box4
+```
 
-plot6 = plot5 + geom_text(aes(y = pct ,
-                            label = paste0(round(pct,2), '%')),
-                        hjust=1,
-                        size = 3)
+####Exercise 4 - Histogram
+Now I make a histogram for the variable FREE LUNCH from the washington education data. First I create a data frame for ggplot to plot using only complete cases
+```{r}
+eduwa3=eduwa[complete.cases(eduwa$Free.Lunch),] #getting rid of missings
+```
 
-plot7=plot6 + coord_flip()
+Misc elements: title
+```{r}
+hist.title = "Histogram of Number of Students Served Free Lunch in Washington Schools"
+```
+<a id='ex4'></a>
+Create Plot
+```{r}
+base= ggplot(eduwa3,aes(x = Free.Lunch))  
+h1= base + geom_histogram(color="black", fill="white", binwidth = 75,boundary=0) #changing width
+h2= h1 + stat_bin(binwidth = 75, aes(label=..count..), 
+                  geom = "text",boundary = 0,vjust=-0.5)
 
-plot7
+h3 = h2 + theme(panel.background = element_rect(fill = "white",
+                                                    colour = "grey50"),
+                    plot.title = element_text(hjust = 0.5),
+                    plot.caption = element_text(hjust=0)) + labs(title=hist.title,
+                     x ="Number of Students Served Free Lunch", 
+                     y = "Frequency",
+                     caption = source.text)
+
+h3
+```
+
+####Exercise 5 - Histogram of student teacher ratio
+First I create the data frame with the necessary variables (mean student teacher ratio by county)
+```{r}
+eduwa4=eduwa[complete.cases(eduwa$Student.Teacher.Ratio),]
+
+eduwa5=as.data.frame(tapply(eduwa4$Student.Teacher.Ratio, 
+       eduwa4$County, 
+       mean))
+names(eduwa5)=c('Student.Teacher.Ratio')
+
+```
+Misc elements:title
+```{r}
+hist.title2 = "Histogram of Average Student Teacher Ratios in Washington Counties"
+```
+
+<a id='ex5_1'></a>
+Create Plot (Histogram)
+```{r}
+base = ggplot(eduwa5, aes(x=Student.Teacher.Ratio)) 
+
+hist1 = base +  geom_histogram(color="black", fill="white", binwidth = 2 ,boundary=0)
+
+hist2 = hist1 + theme(panel.background = element_rect(fill = "white",
+                                                    colour = "grey50"),
+                    plot.title = element_text(hjust = 0.5),
+                    plot.caption = element_text(hjust=0)) + labs(title=hist.title2,
+                     x ="Student Teacher Ratio", 
+                     y = "Frequency",
+                     caption = source.text)
+hist3 = hist2 + scale_x_continuous(breaks=seq(0,24,2)) #adding more tick marks on the x axis
+
+hist4 = hist3 + scale_y_continuous(breaks=seq(0,20,5)) # tick marks on y axis
+
+hist5 = hist4 + geom_vline(aes(xintercept = mean(eduwa5$Student.Teacher.Ratio),colour="mean"),
+                           show.legend  = TRUE) +
+                geom_vline(aes(xintercept = median(eduwa5$Student.Teacher.Ratio),colour="median"),
+                           show.legend  = TRUE) + 
+                scale_color_manual(name = NULL, 
+                                   values = c(median = "blue", mean = "red"))
+hist5
+```
+Misc elements: title
+```{r}
+density.title = "Density Plot of Average Student Teacher Ratios in Washington Counties"
+```
+
+<a id='ex5_2'></a>
+Create Plot (Density Plot)
+```{r}
+den1 = base + geom_density(color="black", fill="white")
+
+den2 = den1 + theme(panel.background = element_rect(fill = "white",
+                                                    colour = "grey50"),
+                    plot.title = element_text(hjust = 0.5),
+                    plot.caption = element_text(hjust=0)) + labs(title=density.title,
+                     x ="Student Teacher Ratio", 
+                     y = "Density",
+                     caption = source.text)
+
+den3 = den2 + scale_x_continuous(breaks=seq(0,24,2))
+
+den4 = den3 + geom_vline(aes(xintercept = mean(eduwa5$Student.Teacher.Ratio),colour="mean"),
+                           show.legend  = TRUE) +
+                geom_vline(aes(xintercept = median(eduwa5$Student.Teacher.Ratio),colour="median"),
+                           show.legend  = TRUE) + 
+                scale_color_manual(name = NULL, 
+                                   values = c(median = "blue", mean = "red"))
+
+den4
+
 ```
 
