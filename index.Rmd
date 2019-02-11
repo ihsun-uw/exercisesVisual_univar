@@ -224,7 +224,7 @@ h3 = h2 + theme(panel.background = element_rect(fill = "white",
 h3
 ```
 
-####Exercise 5 - Histogram of student teacher ratio
+####Exercise 5 - Histogram and density plot of student teacher ratio
 First I create the data frame with the necessary variables (mean student teacher ratio by county)
 ```{r}
 eduwa4=eduwa[complete.cases(eduwa$Student.Teacher.Ratio),]
